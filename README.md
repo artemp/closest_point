@@ -7,8 +7,9 @@ Calculate closest point on geometry given x,y position
 
 ## Requirements
 
-`boost_1_65`
-`boost::geometry` from https://github.com/boostorg/geometry ( `git clone git@github.com:boostorg/geometry.git`) with the following patch applied
+* `boost_1_65`
+
+* `boost::geometry` from https://github.com/boostorg/geometry ( `git clone git@github.com:boostorg/geometry.git`) with the following patch applied
 
  ```patch
  
