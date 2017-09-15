@@ -1,10 +1,9 @@
-local BOOST_DIR = "/opt/boost_1_65" ;
+local BOOST_DIR = "/opt/boost_1_64" ;
 local MAPNIK_DIR = "/opt/mapnik" ;
 local ICU_DIR = "/opt/mapnik_deps" ;
-local BOOST_GEOMETRY = "/home/artem/projects/geometry" ;
 
-lib mapnik :<name>mapnik :<search>$(MAPNIK_DIR)/lib ;
-lib mapnik-wkt :<name>mapnik-wkt :<search>$(MAPNIK_DIR)/lib ;
+lib mapnik : : <name>mapnik <search>$(MAPNIK_DIR)/lib ;
+lib mapnik-wkt : mapnik : <name>mapnik-wkt <search>$(MAPNIK_DIR)/lib ;
 
 exe comparable-distance-test
     :
@@ -12,11 +11,10 @@ exe comparable-distance-test
     .//mapnik
     .//mapnik-wkt
     :
-    <include>$(BOOST_GEOMETRY)/include
     <include>$(BOOST_DIR)/include
+    <include>.
     <include>$(MAPNIK_DIR)/include
     <include>$(ICU_DIR)/include
     <include>$(MAPNIK_DIR)/include/mapnik
     <cxxflags>-std=c++14
-    <linkflags>-L$(MAPNIK_DIR)/lib
     ;
