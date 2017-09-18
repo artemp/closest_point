@@ -137,7 +137,7 @@ int main(int argc, char** argv)
                 for (auto const& ring : poly)
                 {
                     result_type info;
-                    boost::geometry::distance_info(pt ,reinterpret_cast<mapnik::geometry::line_string<double> const&>(ring), info);
+                    boost::geometry::distance_info(pt ,ring, info);
                     auto projected1 = info.projected_point1;
                     std::string wkt;
                     mapnik::util::to_wkt(wkt, projected1);
