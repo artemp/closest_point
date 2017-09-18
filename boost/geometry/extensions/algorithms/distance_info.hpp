@@ -172,20 +172,11 @@ struct distance_info
 };
 
 
-//template
-//<
-//    typename Point, typename Ring,
-//    typename Point
-//>
-//struct distance_info
-//    <
-//        point_tag, ring_tag,
-//        Point, Ring,
-//        Point
-//    >
-//    : detail::distance_info::point_range<Point, Ring, Point>
-//{};
-//
+template <typename Point, typename Ring>
+struct distance_info<Point, Ring, point_tag, ring_tag, false>
+    : detail::distance_info::point_range<Point, Ring>
+{};
+
 //
 template<typename Point, typename Linestring>
 struct distance_info
