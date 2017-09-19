@@ -1,9 +1,7 @@
 # Closest point
 
 Calculate closest point on geometry given x,y position 
-
-![closest-point](https://user-images.githubusercontent.com/59056/30486031-3b5f8d82-9a27-11e7-8911-9311d28049b8.gif)
-
+![point_to_geometry_distance](https://user-images.githubusercontent.com/59056/30586095-1ebc9674-9d2f-11e7-8005-5df5cf777f64.gif)
 
 ## Requirements
 
