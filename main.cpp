@@ -4,11 +4,74 @@
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/geometry/boost_adapters.hpp>
+#include <boost/geometry/algorithms/within.hpp>
 #include <boost/geometry/algorithms/distance.hpp>
 #include <boost/geometry/algorithms/comparable_distance.hpp>
 #include <boost/geometry/extensions/algorithms/closest_point.hpp>
 #include <boost/geometry/io/svg/svg_mapper.hpp>
 #include <mapnik/util/geometry_to_wkt.hpp>
+
+namespace mapnik { namespace geometry {
+
+struct closest_point
+{
+    using result_type = boost::geometry::closest_point_result<mapnik::geometry::point<double>>;
+
+    closest_point(mapnik::geometry::point<double> const& pt)
+        : pt_(pt) {}
+
+    result_type operator() (mapnik::geometry::point<double> const& pt) const
+    {
+        result_type info;
+        boost::geometry::closest_point(pt_ ,pt, info);
+        return info;
+    }
+
+    result_type operator() (mapnik::geometry::line_string<double> const& line) const
+    {
+        result_type info;
+        boost::geometry::closest_point(pt_ ,line, info);
+        return info;
+    }
+
+    result_type operator() (mapnik::geometry::polygon<double> const& poly) const
+    {
+        result_type info;
+        if (boost::geometry::within(pt_, poly))
+        {
+            info.closest_point = pt_;
+            info.distance = 0.0;
+            return info;
+        }
+        bool first = true;
+        for (auto const& ring : poly)
+        {
+            result_type ring_info;
+            boost::geometry::closest_point(pt_ ,ring, ring_info);
+            if (first)
+            {
+                first = false;
+                info = ring_info;
+            }
+            else if (ring_info.distance < info.distance)
+            {
+                info = ring_info;
+            }
+        }
+        return info;
+    }
+
+
+    template <typename T>
+    result_type operator()( T const&) const
+    {
+        return result_type();
+    }
+
+    mapnik::geometry::point<double> pt_;
+};
+
+}}
 
 int main(int argc, char** argv)
 {
@@ -45,32 +108,22 @@ int main(int argc, char** argv)
         auto const& geom = feature->get_geometry();
         if (geom.is<mapnik::geometry::polygon<double>>())
         {
+
             auto const& poly = geom.get<mapnik::geometry::polygon<double>>();
             mapper.add(poly);
-            mapper.map(poly, "fill-opacity:0.3;fill:rgb(51,51,153);stroke:rgb(51,51,153);stroke-width:2");
-
-            using result_type = boost::geometry::closest_point_result<mapnik::geometry::point<double>>;
-
-            if (!poly.empty())
-            {
-                for (auto const& ring : poly)
-                {
-                    result_type info;
-                    boost::geometry::closest_point(pt ,ring, info);
-                    auto closest = info.closest_point;
-                    std::string wkt;
-                    mapnik::util::to_wkt(wkt, closest);
-                    std::cerr << "closest point:" << wkt
-                              << " distance=" << info.distance << std::endl;
-                    mapper.add(closest);
-                    mapper.map(closest,"fill-opacity:0.5;fill:green;stroke:green;stroke-width:2");
-                }
-            }
+            mapper.map(poly, "fill-opacity:0.5;fill:skyblue;stroke:blue;stroke-width:1");
         }
+        auto result = mapnik::util::apply_visitor(mapnik::geometry::closest_point(pt), geom);
+        std::string wkt;
+        mapnik::util::to_wkt(wkt, result.closest_point);
+        std::cerr << "closest point:" << wkt
+                  << " distance=" << result.distance << std::endl;
+        mapper.add(result.closest_point);
+        mapper.map(result.closest_point,"fill-opacity:1.0;fill:yellow;stroke:blue;stroke-width:1");
         feature = features->next();
     }
     mapper.add(pt);
-    mapper.map(pt,"fill-opacity:0.5;fill:red;stroke:red;stroke-width:2");
+    mapper.map(pt,"fill-opacity:1.0;fill:salmon;stroke:blue;stroke-width:1");
     std::cerr << "Done" << std::endl;
     return EXIT_SUCCESS;
 }

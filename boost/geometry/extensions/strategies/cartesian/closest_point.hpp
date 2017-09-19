@@ -41,7 +41,7 @@ struct closest_point_result
     typedef Point point_type;
     typedef typename default_distance_result<Point>::type distance_type;
     distance_type distance;
-    Point closest_point; // A on B
+    Point closest_point;
 
     inline closest_point_result()
         : distance(distance_type())
@@ -112,10 +112,6 @@ public :
 
         // For convenience
         typedef fp_point_type fp_vector_type;
-
-
-
-        // For source-code-comments, see "cartesian/distance_closest_point.hpp"
         fp_vector_type v, w;
 
         geometry::convert(p2, v);
