@@ -4,13 +4,14 @@
 // Copyright (c) 2008-2013 Bruno Lalande, Paris, France.
 // Copyright (c) 2009-2013 Mateusz Loskot, London, UK.
 // Copyright (c) 2013 Adam Wulkiewicz, Lodz, Poland.
+// Copyright (c) 2017 Artem Pavlenko, UK
 
 // Use, modification and distribution is subject to the Boost Software License,
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_GEOMETRY_STRATEGY_CARTESIAN_DISTANCE_INFO_HPP
-#define BOOST_GEOMETRY_STRATEGY_CARTESIAN_DISTANCE_INFO_HPP
+#ifndef BOOST_GEOMETRY_STRATEGY_CARTESIAN_CLOSEST_POINT_HPP
+#define BOOST_GEOMETRY_STRATEGY_CARTESIAN_CLOSEST_POINT_HPP
 
 #include <boost/type_traits/remove_const.hpp>
 
@@ -35,31 +36,15 @@ namespace boost { namespace geometry
 {
 
 template <typename Point>
-struct distance_info_result
+struct closest_point_result
 {
     typedef Point point_type;
     typedef typename default_distance_result<Point>::type distance_type;
+    distance_type distance;
+    Point closest_point; // A on B
 
-    bool on_segment;
-    bool within_geometry;
-    distance_type real_distance;
-    Point projected_point1; // A on B
-    Point projected_point2; // B on A
-    distance_type projected_distance1;
-    distance_type projected_distance2;
-    distance_type fraction1;
-    distance_type fraction2;
-    segment_identifier seg_id1;
-    segment_identifier seg_id2;
-
-    inline distance_info_result()
-        : on_segment(false)
-        , within_geometry(false)
-        , real_distance(distance_type())
-        , projected_distance1(distance_type())
-        , projected_distance2(distance_type())
-        , fraction1(distance_type())
-        , fraction2(distance_type())
+    inline closest_point_result()
+        : distance(distance_type())
     {}
 };
 
@@ -72,7 +57,7 @@ template
     typename CalculationType = void,
     typename Strategy = pythagoras<CalculationType>
 >
-struct calculate_distance_info
+struct calculate_closest_point
 {
 public :
     // The three typedefs below are necessary to calculate distances
@@ -130,7 +115,7 @@ public :
 
 
 
-        // For source-code-comments, see "cartesian/distance_distance_info.hpp"
+        // For source-code-comments, see "cartesian/distance_closest_point.hpp"
         fp_vector_type v, w;
 
         geometry::convert(p2, v);
@@ -143,41 +128,33 @@ public :
         calculation_type const c1 = dot_product(w, v);
         calculation_type const c2 = dot_product(v, v);
 
-        result.on_segment = c1 >= zero && c1 <= c2;
-
-        Strategy point_point_strategy;
-        boost::ignore_unused_variable_warning(point_point_strategy);
-
-        if (geometry::math::equals(c2, zero))
-        {
-            geometry::convert(p1, result.projected_point1);
-            result.fraction1 = 0.0;
-            result.on_segment = false;
-            result.projected_distance1 = result.real_distance = apply_point_point(p, p1);
-            return;
-        }
-
-        calculation_type const b = c1 / c2;
-        result.fraction1 = b;
-
-        geometry::convert(p1, result.projected_point1);
-        multiply_value(v, b);
-        add_point(result.projected_point1, v);
-        result.projected_distance1 = apply_point_point(p, result.projected_point1);
-
         if (c1 < zero)
         {
-            result.real_distance = apply_point_point(p, p1);
-            result.projected_point1 = p1;
+            result.distance = apply_point_point(p, p1);
+            result.closest_point = p1;
         }
         else if(c1 > c2)
         {
-            apply_point_point(p, p2);
-            result.projected_point1 = p2;
+            result.distance = apply_point_point(p, p2);
+            result.closest_point = p2;
         }
         else
         {
-            result.projected_distance1;
+            Strategy point_point_strategy;
+            boost::ignore_unused_variable_warning(point_point_strategy);
+
+            if (geometry::math::equals(c2, zero))
+            {
+                geometry::convert(p1, result.closest_point);
+                result.distance = apply_point_point(p, p1);
+                return;
+            }
+
+            calculation_type const b = c1 / c2;
+            geometry::convert(p1, result.closest_point);
+            multiply_value(v, b);
+            add_point(result.closest_point, v);
+            result.distance = apply_point_point(p, result.closest_point);
         }
     }
 };
@@ -188,4 +165,4 @@ public :
 }} // namespace boost::geometry
 
 
-#endif // BOOST_GEOMETRY_STRATEGY_CARTESIAN_DISTANCE_INFO_HPP
+#endif // BOOST_GEOMETRY_STRATEGY_CARTESIAN_CLOSEST_POINT_HPP

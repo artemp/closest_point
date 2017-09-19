@@ -4,13 +4,14 @@
 // Copyright (c) 2008-2013 Bruno Lalande, Paris, France.
 // Copyright (c) 2009-2013 Mateusz Loskot, London, UK.
 // Copyright (c) 2013 Adam Wulkiewicz, Lodz, Poland.
+// Copyright (c) 2017 Artem Pavlenko, UK
 
 // Use, modification and distribution is subject to the Boost Software License,
 // Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_GEOMETRY_ALGORITHMS_DISTANCE_INFO_HPP
-#define BOOST_GEOMETRY_ALGORITHMS_DISTANCE_INFO_HPP
+#ifndef BOOST_GEOMETRY_ALGORITHMS_CLOSEST_POINT_HPP
+#define BOOST_GEOMETRY_ALGORITHMS_CLOSEST_POINT_HPP
 
 #include <boost/mpl/if.hpp>
 #include <boost/range/functions.hpp>
@@ -30,7 +31,7 @@
 #include <boost/geometry/strategies/default_distance_result.hpp>
 
 #include <boost/geometry/strategies/cartesian/distance_pythagoras.hpp>
-#include <boost/geometry/extensions/strategies/cartesian/distance_info.hpp>
+#include <boost/geometry/extensions/strategies/cartesian/closest_point.hpp>
 
 #include <boost/geometry/util/math.hpp>
 
@@ -39,7 +40,7 @@ namespace boost { namespace geometry
 {
 
 #ifndef DOXYGEN_NO_DETAIL
-namespace detail { namespace distance_info {
+namespace detail { namespace closest_point {
 
 
 template <typename Point1, typename Point2>
@@ -48,14 +49,11 @@ struct point_point
     template <typename Strategy, typename Result>
     static inline void apply(Point1 const& point1, Point2 const& point2, Strategy const& strategy, Result& result)
     {
-        result.real_distance
-            = result.projected_distance1
-            = result.projected_distance2
+        result.distance
             = strategy.apply_point_point(point1, point2);
         // The projected point makes not really sense in point-point.
         // We just assign one on the other
-        geometry::convert(point1, result.projected_point2);
-        geometry::convert(point2, result.projected_point1);
+        geometry::convert(point1, result.closest_point);
     }
 };
 
@@ -89,7 +87,7 @@ struct point_range
         {
             Result other;
             strategy.apply(point, *prev, *it, other);
-            if (other.real_distance < result.real_distance)
+            if (other.distance < result.distance)
             {
                 result = other;
             }
@@ -100,7 +98,7 @@ struct point_range
 
 
 
-}} // namespace detail::distance_info
+}} // namespace detail::closest_point
 #endif // DOXYGEN_NO_DETAIL
 
 
@@ -115,7 +113,7 @@ template
     typename Tag2 = typename tag<Geometry2>::type,
     bool Reverse = reverse_dispatch<Geometry1, Geometry2>::type::value
 >
-struct distance_info : not_implemented<Tag1, Tag2>
+struct closest_point : not_implemented<Tag1, Tag2>
 {
 };
 
@@ -125,14 +123,14 @@ template
     typename Geometry1, typename Geometry2,
     typename Tag1, typename Tag2
 >
-struct distance_info<Geometry1, Geometry2, Tag1, Tag2, true>
+struct closest_point<Geometry1, Geometry2, Tag1, Tag2, true>
 {
     template <typename Strategy, typename Result>
     static inline void apply(Geometry1 const& geometry1, Geometry2 const& geometry2,
                     Strategy const& strategy, Result& result)
     {
         // Reversed version just calls dispatch with reversed arguments
-        distance_info
+        closest_point
             <
                 Geometry2, Geometry1, Tag2, Tag1, false
             >::apply(geometry2, geometry1, strategy, result);
@@ -142,16 +140,16 @@ struct distance_info<Geometry1, Geometry2, Tag1, Tag2, true>
 
 
 template<typename Point1, typename Point2>
-struct distance_info
+struct closest_point
     <
         Point1, Point2,
         point_tag, point_tag, false
-    > : public detail::distance_info::point_point<Point1, Point2>
+    > : public detail::closest_point::point_point<Point1, Point2>
 {};
 
 
 template<typename Point, typename Segment>
-struct distance_info
+struct closest_point
     <
         Point, Segment,
         point_tag, segment_tag,
@@ -173,19 +171,19 @@ struct distance_info
 
 
 template <typename Point, typename Ring>
-struct distance_info<Point, Ring, point_tag, ring_tag, false>
-    : detail::distance_info::point_range<Point, Ring>
+struct closest_point<Point, Ring, point_tag, ring_tag, false>
+    : detail::closest_point::point_range<Point, Ring>
 {};
 
 //
 template<typename Point, typename Linestring>
-struct distance_info
+struct closest_point
     <
         Point, Linestring,
         point_tag, linestring_tag,
         false
     >
-    : detail::distance_info::point_range<Point, Linestring>
+    : detail::closest_point::point_range<Point, Linestring>
 {};
 
 
@@ -195,7 +193,7 @@ struct distance_info
 
 
 template <typename Geometry1, typename Geometry2, typename Result>
-inline void distance_info(Geometry1 const& geometry1, Geometry2 const& geometry2, Result& result)
+inline void closest_point(Geometry1 const& geometry1, Geometry2 const& geometry2, Result& result)
 {
     concepts::check<Geometry1 const>();
     concepts::check<Geometry2 const>();
@@ -207,10 +205,10 @@ inline void distance_info(Geometry1 const& geometry1, Geometry2 const& geometry2
     detail::throw_on_empty_input(geometry1);
     detail::throw_on_empty_input(geometry2);
 
-    strategy::distance::calculate_distance_info<> info_strategy;
+    strategy::distance::calculate_closest_point<> info_strategy;
 
 
-    dispatch::distance_info
+    dispatch::closest_point
             <
                 Geometry1,
                 Geometry2
@@ -220,4 +218,4 @@ inline void distance_info(Geometry1 const& geometry1, Geometry2 const& geometry2
 
 }} // namespace boost::geometry
 
-#endif // BOOST_GEOMETRY_ALGORITHMS_DISTANCE_INFO_HPP
+#endif // BOOST_GEOMETRY_ALGORITHMS_CLOSEST_POINT_HPP
