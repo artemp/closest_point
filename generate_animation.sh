@@ -5,8 +5,8 @@ count=0
 for i in `seq -20 30`; do
     let x=0
     let y=i*2
-    echo $CMD data/poly-multihole.json $x $y
-    $CMD data/poly-multihole.json $x $y
+    echo $CMD data/polygon.json $x $y
+    $CMD data/polygon.json $x $y
     svg2png point_to_geometry_distance.svg
     printf -v frame "%03d" $count
     convert -background white -flatten point_to_geometry_distance.png output/point_to_geometry_distance-$frame.png

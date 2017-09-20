@@ -20,6 +20,11 @@ struct closest_point
     closest_point(mapnik::geometry::point<double> const& pt)
         : pt_(pt) {}
 
+    result_type operator() (mapnik::geometry::geometry_empty const&) const
+    {
+        return result_type(); // FIXME: consider std::optional<result_type>
+    }
+
     result_type operator() (mapnik::geometry::point<double> const& pt) const
     {
         result_type info;
@@ -51,21 +56,46 @@ struct closest_point
             if (first)
             {
                 first = false;
-                info = ring_info;
+                info = std::move(ring_info);
             }
             else if (ring_info.distance < info.distance)
             {
-                info = ring_info;
+                info = std::move(ring_info);
             }
         }
         return info;
     }
 
 
-    template <typename T>
-    result_type operator()( T const&) const
+
+    // Multi* + GeometryCollection
+    result_type operator() (mapnik::geometry::geometry<double> const& geom) const
     {
-        return result_type();
+        return mapnik::util::apply_visitor(*this, geom);
+    }
+
+    template <typename T>
+    result_type operator() (T const& multi_geom) const
+    {
+        result_type info;
+        bool first = true;
+        for (auto const& geom : multi_geom)
+        {
+            if (first)
+            {
+                first = false;
+                info = std::move(operator()(geom));
+            }
+            else
+            {
+                auto sub_info = operator()(geom);
+                if (sub_info.distance < info.distance)
+                {
+                    info = std::move(sub_info);
+                }
+            }
+        }
+        return info;
     }
 
     mapnik::geometry::point<double> pt_;
@@ -118,6 +148,13 @@ int main(int argc, char** argv)
         mapnik::util::to_wkt(wkt, result.closest_point);
         std::cerr << "closest point:" << wkt
                   << " distance=" << result.distance << std::endl;
+
+        mapnik::geometry::line_string<double> line;
+        line.push_back(pt);
+        line.push_back(result.closest_point);
+        mapper.add(line);
+        mapper.map(line,"stroke:red;stroke-width:1;stroke-dasharray:4,4;comp-op:color-burn");
+
         mapper.add(result.closest_point);
         mapper.map(result.closest_point,"fill-opacity:1.0;fill:yellow;stroke:blue;stroke-width:1");
         feature = features->next();
