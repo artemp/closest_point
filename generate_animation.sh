@@ -9,7 +9,7 @@ for i in `seq -20 30`; do
     $CMD data/polygon.json $x $y
     svg2png point_to_geometry_distance.svg
     printf -v frame "%03d" $count
-    convert -background white -flatten point_to_geometry_distance.png output/point_to_geometry_distance-$frame.png
+    convert -flatten -background white point_to_geometry_distance.png output/point_to_geometry_distance-$frame.png
     let count+=1
 done
 

@@ -130,19 +130,24 @@ int main(int argc, char** argv)
     mapnik::geometry::point<double> pt(x, y);
 
     std::ofstream svg("point_to_geometry_distance.svg");
-    boost::geometry::svg_mapper<mapnik::geometry::point<double>> mapper(svg, 600, 400,"width=\"800\" height=\"600\"");
+    boost::geometry::svg_mapper<mapnik::geometry::point<double>> mapper(svg, 600, 400,
+                                                                        "width=\"800\" height=\"600\" fill=\"white\"");
 
+    std::array<std::string, 4> four_colors = {{"red", "blue", "green", "yellow"}};
+    std::size_t counter = 0;
     while (feature != nullptr)
     {
-
         auto const& geom = feature->get_geometry();
         if (geom.is<mapnik::geometry::polygon<double>>())
         {
 
             auto const& poly = geom.get<mapnik::geometry::polygon<double>>();
             mapper.add(poly);
-            mapper.map(poly, "fill-opacity:0.5;fill:skyblue;stroke:blue;stroke-width:1");
+            std::string style = "stroke:blue;stroke-width:1; fill-opacity:0.5;fill:" + four_colors[counter % four_colors.size()];
+            ++counter;
+            mapper.map(poly, style);
         }
+
         auto result = mapnik::util::apply_visitor(mapnik::geometry::closest_point(pt), geom);
         std::string wkt;
         mapnik::util::to_wkt(wkt, result.closest_point);
